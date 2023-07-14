@@ -19,7 +19,7 @@ local m = clion.workspace
 --
 -- Generate a CLion file
 --
-function m.generate(wks)
+function m.generateMisc(wks)
 	p.utf8()
 
 	-- replacing CMakeLists.txt as the default root dir with the Premake script's path
@@ -29,4 +29,35 @@ function m.generate(wks)
 	p.w('	<contentRoot DIR="%s" />', _MAIN_SCRIPT_DIR)
 	p.w('</component>')
 	p.w('</project>')
+end
+
+function m.generateWorkspace(wks)
+	p.utf8()
+
+	p.w('<?xml version="1.0" encoding="UTF-8"?>')
+	p.w('<project version="4">')
+
+	p.w('  <component name="CMakeSettings">')
+    p.w('    <configurations>')
+
+	for _, config in ipairs(wks.configurations) do
+		p.w('      <configuration PROFILE_NAME="%s" ENABLED="true"  GENERATION_DIR="bin/clion/%s">', config, config)
+		p.w('        <ADDITIONAL_GENERATION_ENVIRONMENT>')
+		p.w('          <envs>')
+		p.w('            <env name="PREMAKE_CONFIG" value="%s" />', config)
+		p.w('          </envs>')
+		p.w('        </ADDITIONAL_GENERATION_ENVIRONMENT>')
+		p.w('      </configuration>')
+	end
+
+	p.w('    </configurations>')
+	p.w('  </component>')
+
+	p.w('</project>')
+end
+
+function printTable(t)
+	for k, v in pairs(t) do
+		print(k, v)
+	end
 end

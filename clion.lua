@@ -24,7 +24,9 @@ function clion.generateWorkspace(wks)
     p.eol("\r\n")
     p.indent("  ")
     
-    p.generate(wks, wks.location .. "/.idea/misc.xml", clion.workspace.generate)
+    p.generate(wks, wks.location .. "/.idea/misc.xml", clion.workspace.generateMisc)
+
+    p.generate(wks, wks.location .. "/.idea/workspace.xml", clion.workspace.generateWorkspace)
 end
 
 function clion.cleanWorkspace(wks)
