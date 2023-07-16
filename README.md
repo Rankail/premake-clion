@@ -1,8 +1,5 @@
 [CLion](https://www.jetbrains.com/clion/) generator for [Premake](https://github.com/premake/premake-core).
 
-In addition to generating CMake files, this generator corrects the CLion project root path to the Premake script's directory instead of the generated CMakeLists.txt's directory.
-
-Depends on https://github.com/Enhex/premake-cmake being already installed.
 
 # Usage
 1. Put these files in a `clion` subdirectory in one of [Premake's search paths](https://github.com/premake/premake-core/wiki/Locating-Scripts).
@@ -13,3 +10,11 @@ Depends on https://github.com/Enhex/premake-cmake being already installed.
 ```sh
 premake5 clion
 ```
+\
+This is a fork of [Enhex's premake-clion](https://github.com/Enhex/premake-clion) with some little changes and additions:
+- no longer depends on the cmake-module
+- custom configurations are added atomatically in CLion's configurations
+- build commands work correctly
+
+# TODO
+- [ ] Use file-glob so re-running premake after every new cpp-File is not needed

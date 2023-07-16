@@ -1,5 +1,7 @@
 return {
-	"_preload.lua",
-	"clion.lua",
-	"clion_workspace.lua",
+    "_preload.lua",
+    "clion.lua",
+    "clion_workspace.lua",
+    "clion_project.lua",
+    "clion_idea.lua"
 }

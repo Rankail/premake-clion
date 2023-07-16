@@ -1,63 +1,79 @@
---
--- Name:        clion_workspace.lua
--- Purpose:     Generate a CLion file.
--- Author:      Ryan Pusztai
--- Modified by: Andrea Zanellato
---              Manu Evans
---              Yehonatan Ballas
--- Created:     2013/05/06
--- Copyright:   (c) 2008-2020 Jason Perkins and the Premake project
---
 
 local p = premake
 local project = p.project
+local workspace = p.workspace
+local tree = p.tree
 local clion = p.modules.clion
 
 clion.workspace = {}
 local m = clion.workspace
 
---
--- Generate a CLion file
---
-function m.generateMisc(wks)
-	p.utf8()
+function getPlatforms(wks)
+    local _platforms = {}
+    local platforms = {}
+    for cfg in workspace.eachconfig(wks) do
+        local platform = cfg.platform
+        if platform and not _platforms[platform] then
+            _platforms[platform] = true
+        end
+    end
 
-	-- replacing CMakeLists.txt as the default root dir with the Premake script's path
-	p.w('<?xml version="1.0" encoding="UTF-8"?>')
-	p.w('<project version="4">')
-	p.w('<component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$">')
-	p.w('	<contentRoot DIR="%s" />', _MAIN_SCRIPT_DIR)
-	p.w('</component>')
-	p.w('</project>')
+    for k, _ in pairs(_platforms) do
+        table.insert(platforms, k)
+    end
+
+    return platforms
 end
 
-function m.generateWorkspace(wks)
-	p.utf8()
+function getConfigurations(wks)
+    local cfgs = {}
+    for cfg in workspace.eachconfig(wks) do
+        local name = clion.cfgname(cfg)
+        table.insert(cfgs, name)
+    end
 
-	p.w('<?xml version="1.0" encoding="UTF-8"?>')
-	p.w('<project version="4">')
-
-	p.w('  <component name="CMakeSettings">')
-    p.w('    <configurations>')
-
-	for _, config in ipairs(wks.configurations) do
-		p.w('      <configuration PROFILE_NAME="%s" ENABLED="true"  GENERATION_DIR="bin/clion/%s">', config, config)
-		p.w('        <ADDITIONAL_GENERATION_ENVIRONMENT>')
-		p.w('          <envs>')
-		p.w('            <env name="PREMAKE_CONFIG" value="%s" />', config)
-		p.w('          </envs>')
-		p.w('        </ADDITIONAL_GENERATION_ENVIRONMENT>')
-		p.w('      </configuration>')
-	end
-
-	p.w('    </configurations>')
-	p.w('  </component>')
-
-	p.w('</project>')
+    return cfgs
 end
 
-function printTable(t)
-	for k, v in pairs(t) do
-		print(k, v)
-	end
+function m.generate(wks)
+    p.utf8()
+    _p('cmake_minimum_required(VERSION 3.16)')
+    _p('')
+
+    local platforms = getPlatforms(wks)
+
+    clion.workspace.multiplePlatforms = #platforms > 1
+
+    m.clearDefualtFlags(wks)
+
+    m.projectIncludes(wks)
+end
+
+function m.clearDefualtFlags(wks)
+    _p('set(CMAKE_MSVC_RUNTIME_LIBRARY "")')
+    _p('set(CMAKE_C_FLAGS "")')
+    _p('set(CMAKE_CXX_FLAGS "")')
+
+    local cfgs = getConfigurations(wks)
+
+    for _, cfg in pairs(cfgs) do
+        _p('set(CMAKE_C_FLAGS_%s "")', string.upper(cfg))
+        _p('set(CMAKE_CXX_FLAGS_%s "")', string.upper(cfg))
+    end
+    _p('')
+end
+
+function m.projectIncludes(wks)
+    _p('project("%s")', wks.name)
+
+    local tr = workspace.grouptree(wks)
+    tree.traverse(tr, {
+        onleaf = function(n)
+            local prj = n.project
+
+            local prjpath = p.filename(prj, ".cmake")
+            prjpath = path.getrelative(prj.workspace.location, prjpath)
+            _p('include(%s)', prjpath)
+        end
+    })
 end
