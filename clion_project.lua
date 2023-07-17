@@ -1,4 +1,3 @@
-
 local p = premake
 local project = p.project
 local workspace = p.workspace
@@ -10,7 +9,7 @@ clion.project = {}
 local m = clion.project
 
 function m.quote(s) -- handle single quote: required for "old" version of cmake
-	return premake.quote(s):gsub("'", " ") 
+	return premake.quote(s):gsub("'", " ")
 end
 
 function m.getcompiler(cfg)
@@ -36,7 +35,7 @@ function m.files(prj)
 end
 
 function m.generate(prj)
-    p.utf8()
+	p.utf8()
 
 	if prj.kind == 'Utility' then
 		return
@@ -65,7 +64,7 @@ function m.generate(prj)
 
 	for cfg in project.eachconfig(prj) do
 		_p('if(PREMAKE_CONFIG_TYPE STREQUAL %s)', clion.cfgname(cfg))
-		
+
 		m.generateDependencies(prj)
 		m.generateOutputDir(prj, cfg)
 		m.generateIncludeDirs(prj, cfg)
@@ -93,20 +92,21 @@ function m.generateDependencies(prj)
 		for _, dependency in ipairs(dependencies) do
 			_p(2, '"%s"', dependency.name)
 		end
-		_p(1,')')
+		_p(1, ')')
 	end
 end
 
 function m.generateOutputDir(prj, cfg)
 	-- output dir
-	outputdir = path.getrelative(prj.workspace.location.."/.clion-cmake/"..clion.cfgname(cfg), cfg.buildtarget.directory)
+	outputdir = path.getrelative(prj.workspace.location .. "/.clion-cmake/" .. clion.cfgname(cfg),
+		cfg.buildtarget.directory)
 
-	_p(1,'set_target_properties("%s" PROPERTIES', prj.name)
+	_p(1, 'set_target_properties("%s" PROPERTIES', prj.name)
 	_p(2, 'OUTPUT_NAME "%s"', cfg.buildtarget.basename)
 	_p(2, 'ARCHIVE_OUTPUT_DIRECTORY "%s"', outputdir)
 	_p(2, 'LIBRARY_OUTPUT_DIRECTORY "%s"', outputdir)
 	_p(2, 'RUNTIME_OUTPUT_DIRECTORY "%s"', outputdir)
-	_p(1,')')
+	_p(1, ')')
 end
 
 function m.generateIncludeDirs(prj, cfg)
@@ -140,9 +140,11 @@ end
 function m.generateIncludeDirsAfter(prj, cfg)
 	if #cfg.frameworkdirs > 0 or (cfg.includedirsafter and #cfg.includedirsafter > 0) then
 		_p(1, 'if (MSVC)')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.msc.getincludedirs(cfg, {}, {}, cfg.frameworkdirs, cfg.includedirsafter), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.msc.getincludedirs(cfg, {}, {}, cfg.frameworkdirs, cfg.includedirsafter), "", "", " "))
 		_p(1, 'else()')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.gcc.getincludedirs(cfg, {}, {}, cfg.frameworkdirs, cfg.includedirsafter), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.gcc.getincludedirs(cfg, {}, {}, cfg.frameworkdirs, cfg.includedirsafter), "", "", " "))
 		_p(1, 'endif()')
 	end
 end
@@ -150,9 +152,11 @@ end
 function m.generateIncludeDirsForce(prj, cfg)
 	if #cfg.forceincludes > 0 then
 		_p(1, 'if (MSVC)')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.msc.getforceincludes(cfg), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.msc.getforceincludes(cfg), "", "", " "))
 		_p(1, 'else()')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.gcc.getforceincludes(cfg), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.gcc.getforceincludes(cfg), "", "", " "))
 		_p(1, 'endif()')
 	end
 end
@@ -171,9 +175,11 @@ end
 function m.generateUndefines(prj, cfg)
 	if #cfg.undefines > 0 then
 		_p(1, 'if (MSVC)')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.msc.getundefines(cfg.undefines), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.msc.getundefines(cfg.undefines), "", "", " "))
 		_p(1, 'else()')
-		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name, table.implode(p.tools.gcc.getundefines(cfg.undefines), "", "", " "))
+		_p(2, 'target_compile_options("%s" PRIVATE %s)', prj.name,
+			table.implode(p.tools.gcc.getundefines(cfg.undefines), "", "", " "))
 		_p(1, 'endif()')
 	end
 end
@@ -193,7 +199,7 @@ function m.generateLibs(prj, cfg)
 	-- libs
 	local toolset = m.getcompiler(cfg)
 	local isclangorgcc = toolset == p.tools.clang or toolset == p.tools.gcc
-	
+
 	local uselinkgroups = isclangorgcc and cfg.linkgroups == p.ON
 	if uselinkgroups or # config.getlinks(cfg, "dependencies", "object") > 0 or #config.getlinks(cfg, "system", "fullpath") > 0 then
 		_p(1, 'target_link_libraries("%s"', prj.name)
@@ -225,7 +231,7 @@ function m.generateBuildOptions(prj, cfg)
 	for _, option in ipairs(cfg.buildoptions) do
 		all_build_options = all_build_options .. option .. " "
 	end
-	
+
 	if all_build_options ~= "" then
 		_p(1, 'if(CMAKE_BUILD_TYPE STREQUAL %s)', clion.cfgname(cfg))
 		_p(2, 'set_target_properties("%s" PROPERTIES COMPILE_FLAGS %s)', prj.name, all_build_options)
@@ -354,10 +360,12 @@ function m.generateBuildCommandsPreBuild(prj, cfg)
 		-- so instead, use add_custom_target to run it before any rule (as obj)
 		_p(1, 'add_custom_target(prebuild-%s', prj.name)
 		if cfg.prebuildmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prebuildmessage), cfg.project.basedir, cfg.workspace.location.."/.clion-cmake/cfg")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prebuildmessage), cfg.project.basedir,
+				cfg.workspace.location .. "/.clion-cmake/cfg")
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.prebuildcommands, cfg.project.basedir, cfg.workspace.location.."/.clion-cmake/cfg")
+		local commands = os.translateCommandsAndPaths(cfg.prebuildcommands, cfg.project.basedir,
+			cfg.workspace.location .. "/.clion-cmake/cfg")
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -370,10 +378,12 @@ function m.generateBuildCommandsPreLink(prj, cfg)
 	if cfg.prelinkmessage or #cfg.prelinkcommands > 0 then
 		_p(1, 'add_custom_command(TARGET %s PRE_LINK', prj.name)
 		if cfg.prelinkmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prelinkmessage), cfg.project.basedir, cfg.workspace.location.."/../../")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prelinkmessage), cfg.project.basedir,
+				cfg.workspace.location .. "/.clion-cmake/cfg/")
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.prelinkcommands, cfg.project.basedir, cfg.workspace.location.."/../../")
+		local commands = os.translateCommandsAndPaths(cfg.prelinkcommands, cfg.project.basedir,
+			cfg.workspace.location .. "/.clion-cmake/cfg/")
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -385,10 +395,12 @@ function m.generateBuildCommandsPostBuild(prj, cfg)
 	if cfg.postbuildmessage or #cfg.postbuildcommands > 0 then
 		_p(1, 'add_custom_command(TARGET %s POST_BUILD', prj.name)
 		if cfg.postbuildmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.postbuildmessage), cfg.project.basedir, cfg.workspace.location.."/.clion-cmake/cfg/")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.postbuildmessage), cfg.project.basedir,
+				cfg.workspace.location .. "/.clion-cmake/cfg/")
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.postbuildcommands, cfg.project.basedir, cfg.workspace.location.."/.clion-cmake/cfg/")
+		local commands = os.translateCommandsAndPaths(cfg.postbuildcommands, cfg.project.basedir,
+			cfg.workspace.location .. "/.clion-cmake/cfg/")
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -403,27 +415,33 @@ function m.generateCustomCommands(prj, cfg)
 			return
 		end
 
-		local custom_output_directories = table.unique(table.translate(fileconfig.buildoutputs, function(output) return project.getrelative(cfg.project, path.getdirectory(output)) end))
+		local custom_output_directories = table.unique(table.translate(fileconfig.buildoutputs,
+			function(output) return project.getrelative(cfg.project, path.getdirectory(output)) end))
 		-- Alternative would be to add 'COMMAND ${CMAKE_COMMAND} -E make_directory %s' to below add_custom_command
 		_p(1, 'file(MAKE_DIRECTORY %s)', table.implode(custom_output_directories, "", "", " "))
 
-		_p(1, 'add_custom_command(TARGET OUTPUT %s', table.implode(project.getrelative(cfg.project, fileconfig.buildoutputs),"",""," "))
+		_p(1, 'add_custom_command(TARGET OUTPUT %s',
+			table.implode(project.getrelative(cfg.project, fileconfig.buildoutputs), "", "", " "))
 		if fileconfig.buildmessage then
-			_p(2, 'COMMAND %s', os.translateCommandsAndPaths('{ECHO} ' .. m.quote(fileconfig.buildmessage), cfg.project.basedir, cfg.workspace.location.."/../../"))
+			_p(2, 'COMMAND %s',
+				os.translateCommandsAndPaths('{ECHO} ' .. m.quote(fileconfig.buildmessage), cfg.project.basedir,
+					cfg.workspace.location .. "/.clion-cmake/cfg/"))
 		end
 		for _, command in ipairs(fileconfig.buildcommands) do
-			_p(2, 'COMMAND %s', os.translateCommandsAndPaths(command, cfg.project.basedir, cfg.workspace.location.."/../../"))
+			_p(2, 'COMMAND %s',
+				os.translateCommandsAndPaths(command, cfg.project.basedir, cfg.workspace.location .. "/.clion-cmake/cfg/"))
 		end
 		if filename ~= "" and #fileconfig.buildinputs ~= 0 then
 			filename = filename .. " "
 		end
 		if filename ~= "" or #fileconfig.buildinputs ~= 0 then
-			_p(2, 'DEPENDS %s', filename .. table.implode(fileconfig.buildinputs,"",""," "))
+			_p(2, 'DEPENDS %s', filename .. table.implode(fileconfig.buildinputs, "", "", " "))
 		end
 		_p(1, ')')
 		if not fileconfig.compilebuildoutputs then
 			local target_name = 'CUSTOM_TARGET_' .. filename:gsub('/', '_'):gsub('\\', '_')
-			_p(1, 'add_custom_target(%s DEPENDS %s)', target_name, table.implode(project.getrelative(cfg.project, fileconfig.buildoutputs),"",""," "))
+			_p(1, 'add_custom_target(%s DEPENDS %s)', target_name,
+				table.implode(project.getrelative(cfg.project, fileconfig.buildoutputs), "", "", " "))
 			_p(1, 'add_dependencies(%s %s)', prj.name, target_name)
 		end
 	end
@@ -451,6 +469,7 @@ function m.generateCustomCommands(prj, cfg)
 	addCustomCommand(cfg, "")
 end
 
+-- override
 function os.translateCommandsAndPaths(cmds, basedir, location, map)
 	local translatedBaseDir = path.getrelative(location, basedir)
 
@@ -460,9 +479,10 @@ function os.translateCommandsAndPaths(cmds, basedir, location, map)
 		local result = path.join(translatedBaseDir, value)
 		result = os.translateCommandAndPath(result, map)
 		if value:endswith('/') or value:endswith('\\') or -- if original path ends with a slash then ensure the same
-		   value:endswith('/"') or value:endswith('\\"') then
+			value:endswith('/"') or value:endswith('\\"') then
 			result = result .. '/'
 		end
+
 		return result
 	end
 
@@ -474,13 +494,24 @@ function os.translateCommandsAndPaths(cmds, basedir, location, map)
 		return string.gsub(cmd, "%%%[[^%]\r\n]*%]", replaceFunction)
 	end
 
+	local result
 	if type(cmds) == "table" then
 		local result = {}
 		for i = 1, #cmds do
 			result[i] = processOne(cmds[i])
 		end
-		return os.translateCommands(result, map)
+		result = os.translateCommands(result, map)
+		if os.istarget("windows") then
+			for i = 1, #cmds do
+				result[i] = result[i]:gsub("\\", "\\\\")
+			end
+		end
+		return result
 	else
-		return os.translateCommands(processOne(cmds), map)
+		result = os.translateCommands(processOne(cmds), map)
+		if os.istarget('windows') then
+			result = result:gsub("\\", "\\\\")
+		end
+		return result
 	end
 end
