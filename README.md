@@ -14,7 +14,7 @@ premake5 clion
 This is a fork of [Enhex's premake-clion](https://github.com/Enhex/premake-clion) with some little changes and additions:
 - no longer depends on the cmake-module
 - custom configurations are added atomatically in CLion's configurations
-- build commands work correctly (nvm. they are still somewhat broken)
+- build commands work correctly
 
 # TODO
 - [ ] Use file-glob so re-running premake after every new cpp-File is not needed
