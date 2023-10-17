@@ -22,6 +22,33 @@ function m.getcompiler(cfg)
 end
 
 function m.files(prj)
+	local source_files = {}
+
+	local blocks = prj.current._origin.blocks
+	if #blocks > 6 then
+		local files = blocks[6].files
+		for k, file in ipairs(files) do
+			local dirpath, glob_type, extension = string.match(file, "([^%*]*/)(%*+).(%a*)")
+			
+			if dirpath ~= nil then
+				if #glob_type > 3 then
+					error("Invalid source-directory. Maximum of 2 stars allowed")
+				else
+					local glob_name = "SOURCES_"..tostring(k)
+					local glob_path = '"'..path.getrelative(prj.workspace.location, dirpath).."/*."..extension..'"'
+
+					if #glob_type == 1 then
+						_p(0, "file(GLOB %s %s)", glob_name, glob_path)
+					elseif #glob_type == 2 then
+						_p(0, "file(GLOB_RECURSE %s %s)", glob_name, glob_path)
+					end
+					table.insert(source_files, "${"..glob_name.."}")
+					files[k] = nil
+				end
+			end
+		end
+	end
+	
 	local tr = project.getsourcetree(prj)
 
 	tree.traverse(tr, {
@@ -29,9 +56,10 @@ function m.files(prj)
 			if node.flags.ExcludeFromBuild or node.generated then
 				return
 			end
-			_p(1, '"%s"', path.getrelative(prj.workspace.location, node.abspath))
+			table.insert(source_files, '"'..path.getrelative(prj.workspace.location, node.abspath)..'"')
 		end
 	})
+	return source_files
 end
 
 function m.generate(prj)
@@ -45,6 +73,8 @@ function m.generate(prj)
 		m.generated_files(prj)
 	end
 
+	files = m.files(prj)
+
 	if prj.kind == 'StaticLib' then
 		_p('add_library("%s" STATIC', prj.name)
 	elseif prj.kind == 'SharedLib' then
@@ -56,7 +86,10 @@ function m.generate(prj)
 		_p('add_executable("%s"', prj.name)
 	end
 
-	m.files(prj)
+	for _, f in ipairs(files) do
+		_p(1, f)
+	end
+
 	if prj.hasGeneratedFiles then
 		_p(1, '${GENERATED_FILES}')
 	end
