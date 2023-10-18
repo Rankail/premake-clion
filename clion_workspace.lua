@@ -44,12 +44,12 @@ function m.generate(wks)
 
     clion.workspace.multiplePlatforms = #platforms > 1
 
-    m.clearDefualtFlags(wks)
+    m.clearDefaultFlags(wks)
 
     m.projectIncludes(wks)
 end
 
-function m.clearDefualtFlags(wks)
+function m.clearDefaultFlags(wks)
     _p('set(CMAKE_MSVC_RUNTIME_LIBRARY "")')
     _p('set(CMAKE_C_FLAGS "")')
     _p('set(CMAKE_CXX_FLAGS "")')
@@ -71,9 +71,8 @@ function m.projectIncludes(wks)
         onleaf = function(n)
             local prj = n.project
 
-            local prjpath = p.filename(prj, ".cmake")
-            prjpath = path.getrelative(prj.workspace.location, prjpath)
-            _p('include(%s)', prjpath)
+            local prjpath = path.getrelative(prj.workspace.location, prj.basedir)
+            _p('add_subdirectory(%s)', prjpath)
         end
     })
 end

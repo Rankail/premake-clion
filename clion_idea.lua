@@ -36,7 +36,6 @@ function m.generateWorkspaceExisting(wks)
 
 	-- workspace.xml exists but does not contain configurations
 	local prj_start, prj_end = string.find(file, '\r?\n[ \t]-<project.->[ \t\r]-\n')
-	print(prj_start, prj_end)
 	if prj_start == nil then
 		m.generateWorkspaceNew(wks)
 	else

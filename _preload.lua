@@ -33,6 +33,11 @@ newaction {
 	end
 }
 
+newoption {
+	trigger = "globs",
+	description = "Activate file-globs for source-files. Excluding files does not work."
+}
+
 return function(cfg)
     return (_ACTION == "clion")
 end

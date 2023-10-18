@@ -8,7 +8,7 @@
 
 3. Generate
 ```sh
-premake5 clion
+premake5 clion [--globs]
 ```
 \
 This is a fork of [Enhex's premake-clion](https://github.com/Enhex/premake-clion) with some little changes and additions:
@@ -16,5 +16,4 @@ This is a fork of [Enhex's premake-clion](https://github.com/Enhex/premake-clion
 - custom configurations are added atomatically in CLion's configurations
 - build commands work correctly
 
-# TODO
-- [ ] Use file-glob so re-running premake after every new cpp-File is not needed
+Clion sadly does not simply let you add new source files. You always have to reload cmake.

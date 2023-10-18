@@ -8,6 +8,8 @@ local clion = p.modules.clion
 clion.project = {}
 local m = clion.project
 
+local cmake_dir
+
 function m.quote(s) -- handle single quote: required for "old" version of cmake
 	return premake.quote(s):gsub("'", " ")
 end
@@ -21,34 +23,45 @@ function m.getcompiler(cfg)
 	return toolset
 end
 
-function m.files(prj)
+function m.globs(prj)
 	local source_files = {}
 
 	local blocks = prj.current._origin.blocks
-	if #blocks > 6 then
-		local files = blocks[6].files
-		for k, file in ipairs(files) do
-			local dirpath, glob_type, extension = string.match(file, "([^%*]*/)(%*+).(%a*)")
-			
-			if dirpath ~= nil then
-				if #glob_type > 3 then
-					error("Invalid source-directory. Maximum of 2 stars allowed")
-				else
-					local glob_name = "SOURCES_"..tostring(k)
-					local glob_path = '"'..path.getrelative(prj.workspace.location, dirpath).."/*."..extension..'"'
+	if #blocks <= 6 then
+		return {}
+	end
+	
+	local files = blocks[6].files
+	for k, file in ipairs(files) do
+		local dirpath, glob_type, extension = string.match(file, "([^%*]*/)(%*+).(%a*)")
+		
+		if dirpath ~= nil then
+			if #glob_type > 3 then
+				error("Invalid source-directory. Maximum of 2 stars allowed")
+			else
+				local glob_name = "SOURCES_"..tostring(k)
+				local glob_path = '"'..path.getrelative(prj.workspace.location, dirpath).."/*."..extension..'"'
 
-					if #glob_type == 1 then
-						_p(0, "file(GLOB %s %s)", glob_name, glob_path)
-					elseif #glob_type == 2 then
-						_p(0, "file(GLOB_RECURSE %s %s)", glob_name, glob_path)
-					end
-					table.insert(source_files, "${"..glob_name.."}")
-					files[k] = nil
+				if #glob_type == 1 then
+					_p(0, "file(GLOB %s %s)", glob_name, glob_path)
+				elseif #glob_type == 2 then
+					_p(0, "file(GLOB_RECURSE %s %s)", glob_name, glob_path)
 				end
+				table.insert(source_files, "${"..glob_name.."}")
+				files[k] = nil
 			end
 		end
 	end
-	
+
+	return source_files
+end
+
+function m.files(prj)
+	local source_files = {}
+	if _OPTIONS["globs"] ~= nil then
+		source_files = m.globs(prj)
+	end
+
 	local tr = project.getsourcetree(prj)
 
 	tree.traverse(tr, {
@@ -56,7 +69,7 @@ function m.files(prj)
 			if node.flags.ExcludeFromBuild or node.generated then
 				return
 			end
-			table.insert(source_files, '"'..path.getrelative(prj.workspace.location, node.abspath)..'"')
+			table.insert(source_files, '"'..path.getrelative(prj.location, node.abspath)..'"')
 		end
 	})
 	return source_files
@@ -98,6 +111,8 @@ function m.generate(prj)
 	for cfg in project.eachconfig(prj) do
 		_p('if(PREMAKE_CONFIG_TYPE STREQUAL %s)', clion.cfgname(cfg))
 
+		cmake_dir = prj.workspace.location.."/.clion-cmake/"..clion.cfgname(cfg).."/"..prj.name.."/"
+
 		m.generateDependencies(prj)
 		m.generateOutputDir(prj, cfg)
 		m.generateIncludeDirs(prj, cfg)
@@ -131,8 +146,7 @@ end
 
 function m.generateOutputDir(prj, cfg)
 	-- output dir
-	outputdir = path.getrelative(prj.workspace.location .. "/.clion-cmake/" .. clion.cfgname(cfg),
-		cfg.buildtarget.directory)
+	outputdir = path.getrelative(cmake_dir, cfg.buildtarget.directory)
 
 	_p(1, 'set_target_properties("%s" PROPERTIES', prj.name)
 	_p(2, 'OUTPUT_NAME "%s"', cfg.buildtarget.basename)
@@ -393,12 +407,10 @@ function m.generateBuildCommandsPreBuild(prj, cfg)
 		-- so instead, use add_custom_target to run it before any rule (as obj)
 		_p(1, 'add_custom_target(prebuild-%s', prj.name)
 		if cfg.prebuildmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prebuildmessage), cfg.project.basedir,
-				cfg.workspace.location .. "/.clion-cmake/cfg")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prebuildmessage), cfg.project.basedir, cmake_dir)
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.prebuildcommands, cfg.project.basedir,
-			cfg.workspace.location .. "/.clion-cmake/cfg")
+		local commands = os.translateCommandsAndPaths(cfg.prebuildcommands, cfg.project.basedir, cmake_dir)
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -411,12 +423,10 @@ function m.generateBuildCommandsPreLink(prj, cfg)
 	if cfg.prelinkmessage or #cfg.prelinkcommands > 0 then
 		_p(1, 'add_custom_command(TARGET %s PRE_LINK', prj.name)
 		if cfg.prelinkmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prelinkmessage), cfg.project.basedir,
-				cfg.workspace.location .. "/.clion-cmake/cfg/")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.prelinkmessage), cfg.project.basedir, cmake_dir)
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.prelinkcommands, cfg.project.basedir,
-			cfg.workspace.location .. "/.clion-cmake/cfg/")
+		local commands = os.translateCommandsAndPaths(cfg.prelinkcommands, cfg.project.basedir, cmake_dir)
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -428,12 +438,10 @@ function m.generateBuildCommandsPostBuild(prj, cfg)
 	if cfg.postbuildmessage or #cfg.postbuildcommands > 0 then
 		_p(1, 'add_custom_command(TARGET %s POST_BUILD', prj.name)
 		if cfg.postbuildmessage then
-			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.postbuildmessage), cfg.project.basedir,
-				cfg.workspace.location .. "/.clion-cmake/cfg/")
+			local command = os.translateCommandsAndPaths("{ECHO} " .. m.quote(cfg.postbuildmessage), cfg.project.basedir, cmake_dir)
 			_p(2, 'COMMAND %s', command)
 		end
-		local commands = os.translateCommandsAndPaths(cfg.postbuildcommands, cfg.project.basedir,
-			cfg.workspace.location .. "/.clion-cmake/cfg/")
+		local commands = os.translateCommandsAndPaths(cfg.postbuildcommands, cfg.project.basedir, cmake_dir)
 		for _, command in ipairs(commands) do
 			_p(2, 'COMMAND %s', command)
 		end
@@ -457,12 +465,11 @@ function m.generateCustomCommands(prj, cfg)
 			table.implode(project.getrelative(cfg.project, fileconfig.buildoutputs), "", "", " "))
 		if fileconfig.buildmessage then
 			_p(2, 'COMMAND %s',
-				os.translateCommandsAndPaths('{ECHO} ' .. m.quote(fileconfig.buildmessage), cfg.project.basedir,
-					cfg.workspace.location .. "/.clion-cmake/cfg/"))
+				os.translateCommandsAndPaths('{ECHO} ' .. m.quote(fileconfig.buildmessage), cfg.project.basedir, cmake_dir))
 		end
 		for _, command in ipairs(fileconfig.buildcommands) do
 			_p(2, 'COMMAND %s',
-				os.translateCommandsAndPaths(command, cfg.project.basedir, cfg.workspace.location .. "/.clion-cmake/cfg/"))
+				os.translateCommandsAndPaths(command, cfg.project.basedir, cmake_dir))
 		end
 		if filename ~= "" and #fileconfig.buildinputs ~= 0 then
 			filename = filename .. " "

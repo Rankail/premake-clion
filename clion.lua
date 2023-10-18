@@ -28,7 +28,7 @@ function clion.generateProject(prj)
     p.indent("  ")
 
     if project.isc(prj) or project.iscpp(prj) then
-        p.generate(prj, ".cmake", clion.project.generate)
+        p.generate(prj, "CMakeLists.txt", clion.project.generate)
     end
 end
 
