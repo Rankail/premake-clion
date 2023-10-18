@@ -71,9 +71,8 @@ function m.projectIncludes(wks)
         onleaf = function(n)
             local prj = n.project
 
-            local prjpath = p.filename(prj, ".cmake")
-            prjpath = path.getrelative(prj.workspace.location, prjpath)
-            _p('include(%s)', prjpath)
+            local prjpath = path.getrelative(prj.workspace.location, prj.basedir)
+            _p('add_subdirectory(%s)', prjpath)
         end
     })
 end
