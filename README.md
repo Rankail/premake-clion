@@ -12,8 +12,10 @@ premake5 clion [--globs]
 ```
 \
 This is a fork of [Enhex's premake-clion](https://github.com/Enhex/premake-clion) with some little changes and additions:
-- no longer depends on the cmake-module
-- custom configurations are added atomatically in CLion's configurations
+- [cmake-module](https://github.com/Enhex/premake-cmake) is no longer a dependency
+- custom configurations are added automatically in CLion's configurations
 - build commands work correctly
+- projects are now correctly linked with `add_subdirectory` instead of `include` (`include` broke CLion's "Add to CMake Project")
+- cmake's file-globs can be used with `--globs`
 
-Clion sadly does not simply let you add new source files. You always have to reload cmake.
+CLion sadly does not simply let you add new source files.
